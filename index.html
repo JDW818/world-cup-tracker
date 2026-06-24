@@ -441,6 +441,14 @@ function aboveBounds(g,ov){
   return out;
 }
 function classifyGroup(g,ov){
+  // Fully-decided group (no remaining fixtures, no hypothetical override): classify by
+  // actual finishing rank (points -> goal difference -> goals for) so teams level on
+  // points don't both count as "through". Exactly two teams can finish in the top two.
+  if(!(ov&&Object.keys(ov).length)&&remainingFixtures(g).length===0){
+    const res={};
+    teamsOf(g).forEach(ab=>{const r=TEAM[ab].rank;res[ab]=r<=2?'through':r===3?'third':'out';});
+    return res;
+  }
   const ab=aboveBounds(g,ov), res={};
   Object.keys(ab).forEach(t=>{const best=ab[t].min+1,worst=ab[t].max+1;
     res[t]=worst<=2?'through':best<=2?'alive':best===3?'third':'out';});
@@ -601,8 +609,17 @@ function implicationsBlock(m,out){
 }
 function currentGroupBlock(g){
   const cls=classifyGroup(g,{});
-  const rows=teamsOf(g).map(ab=>TEAM[ab]).sort((a,b)=>a.rank-b.rank).map(t=>'<div class="iline"><div class="il-t"><span class="flag" style="font-size:18px;width:22px">'+t.flag+'</span><span class="abbr" style="width:auto">'+t.ab+'</span><span class="tname" style="font-size:11px">'+t.name+'</span></div><span class="ipts">'+t.pts+' pts</span>'+badge(cls[t.ab])+'</div>').join('');
-  return '<div class="imp">'+rows+'<div class="note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg><span>Where Group '+g+' stands now. Top two advance; third place chases a best-third-placed spot.</span></div></div>';
+  const sorted=teamsOf(g).map(ab=>TEAM[ab]).sort((a,b)=>a.rank-b.rank);
+  const rows=sorted.map(t=>'<div class="iline"><div class="il-t"><span class="flag" style="font-size:18px;width:22px">'+t.flag+'</span><span class="abbr" style="width:auto">'+t.ab+'</span><span class="tname" style="font-size:11px">'+t.name+'</span></div><span class="ipts">'+t.pts+' pts</span>'+badge(cls[t.ab])+'</div>').join('');
+  let note;
+  if(remainingFixtures(g).length===0){
+    const a=sorted[0],b=sorted[1],c=sorted[2];
+    const splitBy=b.pts===c.pts?(b.gd!==c.gd?' on goal difference':b.gf!==c.gf?' on goals scored':' on the tiebreakers'):'';
+    note='Group '+g+' is complete. '+a.name+' and '+b.name+' go through'+(splitBy?' — '+b.name+' edge '+c.name+splitBy+' for second':'')+'. '+c.name+' finish third and go into the best-third-placed race.';
+  } else {
+    note='Where Group '+g+' stands now. Top two advance; third place chases a best-third-placed spot.';
+  }
+  return '<div class="imp">'+rows+'<div class="note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg><span>'+note+'</span></div></div>';
 }
 function parsePlayer(s){const m=s.match(/^(.*)\s\((goalkeeper|defender|midfielder|forward)\)$/);let name=m?m[1]:s,pos=m?m[2]:'midfielder';return{name:name.includes(',')?name.split(',')[0].trim():name.trim(),pos};}
 function pitchBlock(xi){
