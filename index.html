@@ -183,7 +183,7 @@
   .dt-mid .vs{font-size:13px;color:var(--muted);letter-spacing:1px}
   .tapnote{font-size:10px;color:var(--faint);text-align:center;margin-top:9px;font-family:'Oswald';letter-spacing:.5px;text-transform:uppercase}
 
-  .sec-t{font-family:'Oswald';font-weight:600;text-transform:uppercase;letter-spacing:1px;font-size:11.5px;color:var(--muted);margin:24px 0 12px;display:flex;align-items:center;gap:9px}
+  .sec-t{font-family:'Oswald';font-weight:600;text-transform:uppercase;letter-spacing:1px;font-size:11.5px;color:var(--muted);margin:16px 0 11px;display:flex;align-items:center;gap:10px}
   .sec-t::after{content:"";flex:1;height:1px;background:var(--line)}
 
   .pbar{display:flex; height:13px; border-radius:7px; overflow:hidden; background:var(--panel2); border:1px solid var(--line)}
@@ -455,6 +455,9 @@ function classifyGroup(g,ov){
   return res;
 }
 function projPoints(g,m,o){const pts={};teamsOf(g).forEach(ab=>pts[ab]=TEAM[ab].pts);if(o)applyRes(pts,m,o);return pts;}
+/* fold any in-progress match in this group into the projection at its current score,
+   so a live game is treated as a provisional result rather than an unplayed coin-flip */
+function liveOverrides(g){const ov={};GAMES.forEach(m=>{if(m.group===g&&m.live)ov[m.id]=m.hs>m.as?'H':m.hs<m.as?'A':'D';});return ov;}
 
 /* ---- helpers ---- */
 const fmtTime=d=>d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
@@ -551,7 +554,7 @@ function renderStandings(){
   lg.innerHTML='<span><i class="ldot l-through"></i>Advancing</span><span><i class="ldot l-alive"></i>Top-2 fight</span><span><i class="ldot l-third"></i>3rd-place race</span><span><i class="ldot l-out"></i>Eliminated</span>';
   const groups=[...new Set(Object.values(TEAM).map(t=>t.group))].sort();
   main.innerHTML=groups.map(g=>{
-    const cls=classifyGroup(g,{});
+    const cls=classifyGroup(g,liveOverrides(g));
     const rows=teamsOf(g).map(ab=>TEAM[ab]).sort((a,b)=>a.rank-b.rank).map(t=>{
       const gd=(t.gd>0?'+':'')+t.gd;
       return '<tr class="qrow '+cls[t.ab]+' tappable" data-team="'+t.ab+'"><td class="pos"><b>'+t.rank+'</b></td>'
@@ -608,7 +611,8 @@ function implicationsBlock(m,out){
   return '<div class="imp"><div class="imp-head">'+head+'</div>'+lines+'<div class="note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg><span>'+note+'</span></div></div>';
 }
 function currentGroupBlock(g){
-  const cls=classifyGroup(g,{});
+  const ov=liveOverrides(g),hasLive=Object.keys(ov).length>0;
+  const cls=classifyGroup(g,ov);
   const sorted=teamsOf(g).map(ab=>TEAM[ab]).sort((a,b)=>a.rank-b.rank);
   const rows=sorted.map(t=>'<div class="iline"><div class="il-t"><span class="flag" style="font-size:18px;width:22px">'+t.flag+'</span><span class="abbr" style="width:auto">'+t.ab+'</span><span class="tname" style="font-size:11px">'+t.name+'</span></div><span class="ipts">'+t.pts+' pts</span>'+badge(cls[t.ab])+'</div>').join('');
   let note;
@@ -616,6 +620,8 @@ function currentGroupBlock(g){
     const a=sorted[0],b=sorted[1],c=sorted[2];
     const splitBy=b.pts===c.pts?(b.gd!==c.gd?' on goal difference':b.gf!==c.gf?' on goals scored':' on the tiebreakers'):'';
     note='Group '+g+' is complete. '+a.name+' and '+b.name+' go through'+(splitBy?' — '+b.name+' edge '+c.name+splitBy+' for second':'')+'. '+c.name+' finish third and go into the best-third-placed race.';
+  } else if(hasLive){
+    note='Outlook with the live score counted as the result. Top two advance; third place chases a best-third-placed spot.';
   } else {
     note='Where Group '+g+' stands now. Top two advance; third place chases a best-third-placed spot.';
   }
@@ -670,17 +676,17 @@ function matchSheet(id){
   return body;
 }
 function teamScenario(ab){
-  const t=TEAM[ab],g=t.group,now=classifyGroup(g,{})[ab];
-  const bd=aboveBounds(g,{})[ab];
-  const next=GAMES.filter(m=>m.group===g&&!m.fin&&(m.home===ab||m.away===ab)).sort((a,b)=>a.ko-b.ko)[0];
+  const t=TEAM[ab],g=t.group,ov=liveOverrides(g),now=classifyGroup(g,ov)[ab];
+  const bd=aboveBounds(g,ov)[ab];
+  const next=GAMES.filter(m=>m.group===g&&!m.fin&&!m.live&&(m.home===ab||m.away===ab)).sort((a,b)=>a.ko-b.ko)[0];
   if(now==='through')return{tone:'through',head:bd.max+1===1?'Top spot secured':'Through to the last 32',sub:bd.max+1===1?'Guaranteed to win the group and bank a top seeding for the knockouts.':'A top-two finish is locked in — already into the Round of 32.'};
   if(now==='out')return{tone:'out',head:'Eliminated',sub:'Out of reach for both a top-two place and a best-third spot. Their tournament ends in the group stage.'};
   if(now==='third'){let sub='Can no longer catch the top two, but a third-place finish keeps them in the race for the eight best-third-placed berths.';
-    if(next){const opp=TEAM[next.home===ab?next.away:next.home].name,win=next.home===ab?'H':'A';sub+=classifyGroup(g,{[next.id]:win})[ab]==='third'?' A win over '+opp+' strengthens that third-place push.':' They likely need a result against '+opp+' to stay in it.';}
+    if(next){const opp=TEAM[next.home===ab?next.away:next.home].name,win=next.home===ab?'H':'A';sub+=classifyGroup(g,{...ov,[next.id]:win})[ab]==='third'?' A win over '+opp+' strengthens that third-place push.':' They likely need a result against '+opp+' to stay in it.';}
     return{tone:'third',head:'In the third-place race',sub};}
   if(!next)return{tone:'alive',head:'Still alive',sub:'A top-two place is still mathematically possible, but it now hinges on other results in the group.'};
   const opp=TEAM[next.home===ab?next.away:next.home].name,win=next.home===ab?'H':'A',loss=next.home===ab?'A':'H';
-  const sW=classifyGroup(g,{[next.id]:win})[ab],sD=classifyGroup(g,{[next.id]:'D'})[ab],sL=classifyGroup(g,{[next.id]:loss})[ab];
+  const sW=classifyGroup(g,{...ov,[next.id]:win})[ab],sD=classifyGroup(g,{...ov,[next.id]:'D'})[ab],sL=classifyGroup(g,{...ov,[next.id]:loss})[ab];
   let head,sub;
   if(sD==='through'&&sW==='through'){head='Draw or better to qualify';sub='Avoid defeat against '+opp+' and a top-two place is guaranteed.';}
   else if(sW==='through'){head='Win to qualify';sub='Beat '+opp+" and they're through. A draw leaves it to other results.";}
