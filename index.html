@@ -286,6 +286,14 @@
   .ko-banner{display:flex;align-items:center;gap:10px;padding:13px 16px;border:1px solid var(--line);border-radius:14px;background:var(--panel);margin-bottom:6px}
   .ko-banner .kb-r{font-family:'Oswald';font-weight:700;text-transform:uppercase;letter-spacing:.6px;font-size:15px}
   .ko-banner .kb-d{font-size:11px;color:var(--muted);margin-left:auto;font-family:'Oswald';letter-spacing:.4px;text-transform:uppercase}
+  /* knockout context strip — sits in the header where the date rail would be */
+  .korail{padding:0 18px 13px;margin-top:11px}
+  .kctx{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 15px}
+  .kctx .kc-round{font-family:'Oswald';font-weight:700;text-transform:uppercase;letter-spacing:.6px;font-size:15px;line-height:1.05}
+  .kctx .kc-date{font-size:10.5px;color:var(--muted);font-family:'Oswald';letter-spacing:.5px;text-transform:uppercase;margin-top:3px}
+  .kctx .kc-prog{margin-left:auto;text-align:right;font-family:'Oswald';font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:11px;color:var(--muted);white-space:nowrap}
+  .kctx .kc-prog .live{color:#ff5e74}
+  .kctx .kc-prog .livedot{margin-right:4px}
   .ko-panel{background:var(--panel2);border:1px solid var(--line);border-radius:14px;overflow:hidden}
   .ko-panel .ko-body{padding:15px 16px}
   .ko-head{font-family:'Oswald';font-weight:700;font-size:17px;letter-spacing:.2px;line-height:1.3}
@@ -311,6 +319,7 @@
     <div class="tricolor"></div>
     <div id="phases" class="phases"></div>
     <div id="railWrap" class="railwrap"><div id="rail" class="rail"></div></div>
+    <div id="koBar" class="korail" style="display:none"></div>
     <div id="legendWrap" class="legend" style="display:none"></div>
   </header>
   <main id="main"></main>
@@ -496,11 +505,11 @@ let selDay=allDays.includes(todayYMD)?todayYMD:(allDays.find(d=>d>=todayYMD)||al
 
 /* ============================== MATCHES VIEW ============================== */
 const ROUND_META={
-  r32:{title:'Round of 32',count:'32 teams',when:'28 June – 3 July',rule:'New for 2026: the 12 group winners, 12 runners-up and the 8 best third-placed teams reach the opening knockout round.'},
-  r16:{title:'Round of 16',count:'16 teams',when:'4 – 7 July',rule:'The sixteen Round of 32 winners advance to the last sixteen.'},
-  qf:{title:'Quarter-finals',count:'8 teams',when:'9 – 11 July',rule:'Eight survivors meet for a place in the semi-finals.'},
-  sf:{title:'Semi-finals',count:'4 teams',when:'14 – 15 July',rule:'The last four play for a spot in the final.'},
-  final:{title:'Final',count:'2 teams',when:'Sunday 19 July · MetLife Stadium',rule:'The last two standing contest the FIFA World Cup. (The third-place play-off is on 18 July.)'}
+  r32:{title:'Round of 32',count:'32 teams',n:16,when:'28 June – 3 July',rule:'New for 2026: the 12 group winners, 12 runners-up and the 8 best third-placed teams reach the opening knockout round.'},
+  r16:{title:'Round of 16',count:'16 teams',n:8,when:'4 – 7 July',rule:'The sixteen Round of 32 winners advance to the last sixteen.'},
+  qf:{title:'Quarter-finals',count:'8 teams',n:4,when:'9 – 11 July',rule:'Eight survivors meet for a place in the semi-finals.'},
+  sf:{title:'Semi-finals',count:'4 teams',n:2,when:'14 – 15 July',rule:'The last four play for a spot in the final.'},
+  final:{title:'Final',count:'2 teams',n:1,when:'Sunday 19 July · MetLife Stadium',rule:'The last two standing contest the FIFA World Cup. (The third-place play-off is on 18 July.)'}
 };
 /* knockout round model: names, short tags, the round each one feeds into, and the date
    windows used to classify a knockout match pulled live from the feed */
@@ -532,10 +541,12 @@ function renderMatches(){
   const rw=document.getElementById('railWrap');
   if(selPhase!=='group'){
     rw.style.display='none';
+    const kb=document.getElementById('koBar'); kb.style.display='block'; kb.innerHTML=koContextBar(selPhase);
     main.innerHTML='<div class="roundwrap">'+roundView(selPhase)+'</div>';
     wirePhases(); bindMatches(); return;
   }
   rw.style.display='block';
+  document.getElementById('koBar').style.display='none';
   document.getElementById('rail').innerHTML=allDays.map(d=>{
     const dt=new Date(d+'T12:00:00'), gd=GAMES.filter(g=>localYMD(g.ko)===d);
     const allFin=gd.every(g=>g.fin), cls=['dpill'];
@@ -552,12 +563,21 @@ function renderMatches(){
   wirePhases(); bindMatches();
   const sel=document.querySelector('.dpill.sel'); if(sel)sel.scrollIntoView({inline:'center',block:'nearest'});
 }
-function koFixturesView(rk,ms){
+function koContextBar(rk){
   const r=ROUND_META[rk];
+  const ms=GAMES.filter(g=>g.knockout&&(g.round===rk||(rk==='final'&&g.round==='third')));
+  const live=ms.filter(g=>g.live).length, done=ms.filter(g=>g.fin).length, n=r.n||ms.length;
+  let prog;
+  if(live)prog='<span class="live"><span class="livedot"></span>'+live+' live</span>';
+  else if(!ms.length)prog='Not yet set';
+  else if(n&&done>=n)prog='Complete';
+  else prog=done+' of '+n+' played';
+  return '<div class="kctx"><div><div class="kc-round">'+r.title+'</div><div class="kc-date">'+r.when.replace(' · MetLife Stadium','')+'</div></div><div class="kc-prog">'+prog+'</div></div>';
+}
+function koFixturesView(rk,ms){
   const byDay={}; ms.forEach(g=>{const k=localYMD(g.ko);(byDay[k]=byDay[k]||[]).push(g);});
   const days=Object.keys(byDay).sort();
-  const live=ms.filter(g=>g.live).length, done=ms.filter(g=>g.fin).length;
-  let html='<div class="ko-banner"><span class="kb-r">'+r.title+'</span><span class="kb-d">'+(live?live+' live · ':'')+done+'/'+ms.length+' played</span></div>';
+  let html='';
   days.forEach(d=>{const dt=new Date(d+'T12:00:00');
     html+='<div class="dayhdr"><span class="dt">'+dt.toLocaleDateString([],{weekday:'long',month:'short',day:'numeric'})+'</span><span class="ct">'+byDay[d].length+' match'+(byDay[d].length>1?'es':'')+'</span></div>'+byDay[d].map(matchCard).join('');});
   return html;
@@ -595,6 +615,7 @@ function renderStandings(){
   const main=document.getElementById('main');
   document.getElementById('phases').style.display='none';
   document.getElementById('railWrap').style.display='none';
+  document.getElementById('koBar').style.display='none';
   const lg=document.getElementById('legendWrap'); lg.style.display='flex';
   lg.innerHTML='<span><i class="ldot l-through"></i>Advancing</span><span><i class="ldot l-alive"></i>Top-2 fight</span><span><i class="ldot l-third"></i>3rd-place race</span><span><i class="ldot l-out"></i>Eliminated</span>';
   const groups=[...new Set(Object.values(TEAM).map(t=>t.group))].sort();
