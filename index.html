@@ -152,7 +152,7 @@
   .navbar{pointer-events:auto; display:flex; gap:4px; margin:0 auto 14px; padding:6px;
     background:rgba(21,23,29,.93); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
     border:1px solid var(--line); border-radius:99px; box-shadow:var(--shadow)}
-  .navbtn{display:flex; align-items:center; gap:8px; padding:11px 22px; border-radius:99px; cursor:pointer;
+  .navbtn{display:flex; align-items:center; gap:7px; padding:11px 17px; border-radius:99px; cursor:pointer;
     font-family:'Oswald'; font-weight:600; text-transform:uppercase; letter-spacing:.7px; font-size:13px; color:var(--muted); transition:.2s; border:none; background:none}
   .navbtn[aria-current="true"]{color:#1A1206; background:var(--gold)}
   .navbtn svg{width:17px;height:17px}
@@ -294,6 +294,35 @@
   .kctx .kc-prog{margin-left:auto;text-align:right;font-family:'Oswald';font-weight:600;text-transform:uppercase;letter-spacing:.5px;font-size:11px;color:var(--muted);white-space:nowrap}
   .kctx .kc-prog .live{color:#ff5e74}
   .kctx .kc-prog .livedot{margin-right:4px}
+
+  /* bracket view */
+  .bk-intro{padding:14px 18px 4px;color:var(--muted);font-size:12.5px;line-height:1.5}
+  .bk-champ{margin:8px 18px 2px;padding:14px 16px;border:1px solid rgba(241,196,75,.4);border-radius:14px;background:linear-gradient(150deg,rgba(241,196,75,.12),transparent 70%),var(--panel);display:flex;align-items:center;gap:12px}
+  .bk-champ svg{color:var(--gold);flex:0 0 auto}
+  .bk-champ .bc-l{font-family:'Oswald';font-weight:500;text-transform:uppercase;letter-spacing:.7px;font-size:10px;color:var(--gold)}
+  .bk-champ .bc-n{font-family:'Oswald';font-weight:700;font-size:20px;letter-spacing:.4px;display:flex;align-items:center;gap:9px}
+  .bk-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:10px 16px 24px}
+  .bk-scroll::-webkit-scrollbar{display:none}
+  .bk-canvas{position:relative;display:inline-block}
+  .bk-svg{position:absolute;left:0;top:0;pointer-events:none;z-index:0;overflow:visible}
+  .bk-cols{display:flex;gap:30px;position:relative;z-index:1;align-items:stretch}
+  .bk-col{display:flex;flex-direction:column;justify-content:space-around;flex:0 0 124px}
+  .bk-colh{font-family:'Oswald';font-weight:600;text-transform:uppercase;letter-spacing:.6px;font-size:10px;color:var(--muted);text-align:center;padding:4px 0 9px}
+  .bk-cell{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 8px;cursor:pointer;transition:border-color .15s,transform .1s;margin:7px 0}
+  .bk-cell:active{transform:scale(.97)}
+  .bk-cell.tbd{cursor:default;border-style:dashed;opacity:.55}
+  .bk-cell.islive{border-color:rgba(228,0,43,.5);background:linear-gradient(180deg,rgba(228,0,43,.06),transparent 70%),var(--panel)}
+  .bk-cell.final-cell{border-color:rgba(241,196,75,.45)}
+  .bk-row{display:flex;align-items:center;gap:6px;padding:2.5px 0}
+  .bk-row .f{font-size:13px;width:17px;text-align:center;flex:0 0 auto}
+  .bk-row .ab{font-family:'Oswald';font-weight:600;font-size:12.5px;letter-spacing:.3px;flex:1;color:var(--muted)}
+  .bk-row .sc{font-family:'Oswald';font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;color:var(--muted)}
+  .bk-row.win .ab,.bk-row.win .sc{color:var(--text)}
+  .bk-row.tbdrow .ab{color:var(--faint)}
+  .bk-when{font-size:8px;color:var(--faint);font-family:'Oswald';letter-spacing:.4px;text-transform:uppercase;text-align:center;padding-top:2px}
+  .bk-pens{font-size:8px;color:var(--gold);font-family:'Oswald';letter-spacing:.3px;text-transform:uppercase;text-align:center;padding-top:1px}
+  .bk-third{margin:0 18px;padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);display:flex;align-items:center;gap:10px;font-size:12px}
+  .bk-third .lbl{font-family:'Oswald';font-weight:500;text-transform:uppercase;letter-spacing:.5px;font-size:9.5px;color:var(--muted);flex:0 0 auto}
   .ko-panel{background:var(--panel2);border:1px solid var(--line);border-radius:14px;overflow:hidden}
   .ko-panel .ko-body{padding:15px 16px}
   .ko-head{font-family:'Oswald';font-weight:700;font-size:17px;letter-spacing:.2px;line-height:1.3}
@@ -326,6 +355,8 @@
   <nav><div class="navbar">
     <button class="navbtn" data-view="matches" aria-current="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Matches</button>
+    <button class="navbtn" data-view="bracket">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 4v5a3 3 0 0 0 3 3h4M5 20v-5a3 3 0 0 1 3-3M12 12h3"/><rect x="15" y="9" width="5" height="6" rx="1.2"/></svg>Bracket</button>
     <button class="navbtn" data-view="standings">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Standings</button>
   </div></nav>
@@ -648,6 +679,80 @@ function renderStandings(){
 
 const PHASES=[['group','Group Stage'],['r32','Round of 32'],['r16','Round of 16'],['qf','Quarter-finals'],['sf','Semi-finals'],['final','Final']];
 
+/* ============================== BRACKET VIEW ============================== */
+const BK_ROUNDS=[['r32',16],['r16',8],['qf',4],['sf',2],['final',1]];
+function koWinner(g){if(!g||!g.fin)return null;const pens=g.penH!=null;return (g.hs>g.as||(g.hs===g.as&&pens&&g.penH>g.penA))?g.home:g.away;}
+let bracketLinks=[];
+function bkCell(g,round){
+  if(!g){
+    return '<div class="bk-cell tbd"><div class="bk-row tbdrow"><span class="f">·</span><span class="ab">TBD</span></div><div class="bk-row tbdrow"><span class="f">·</span><span class="ab">TBD</span></div></div>';
+  }
+  const t=TEAM,pens=g.penH!=null,fin=g.fin,live=g.live;
+  let wH=null;if(fin)wH=g.hs>g.as||(g.hs===g.as&&pens&&g.penH>g.penA);else if(live)wH=g.hs>g.as?true:g.as>g.hs?false:null;
+  const showScore=fin||live;
+  const row=(ab,win)=>'<div class="bk-row'+(win===true?' win':win===false?' lose':'')+'"><span class="f">'+t[ab].flag+'</span><span class="ab">'+ab+'</span>'+(showScore?'<span class="sc">'+(ab===g.home?g.hs:g.as)+'</span>':'')+'</div>';
+  const foot=live?'<div class="bk-when" style="color:#ff5e74">'+liveMinuteStr(g)+'</div>'
+    :fin?(pens?'<div class="bk-pens">'+koWinner(g)+' on pens</div>':'')
+    :'<div class="bk-when">'+dayShort(g.ko)+' · '+fmtTime(g.ko)+'</div>';
+  return '<div class="bk-cell'+(live?' islive':'')+(round==='final'?' final-cell':'')+'" data-m="'+g.id+'"><div>'+row(g.home,wH===null?null:wH)+row(g.away,wH===null?null:!wH)+'</div>'+foot+'</div>';
+}
+function renderBracket(){
+  const main=document.getElementById('main');
+  document.getElementById('phases').style.display='none';
+  document.getElementById('railWrap').style.display='none';
+  document.getElementById('koBar').style.display='none';
+  document.getElementById('legendWrap').style.display='none';
+  const byRound={}; BK_ROUNDS.forEach(([r])=>byRound[r]=GAMES.filter(g=>g.knockout&&g.round===r).sort((a,b)=>a.ko-b.ko||(a.id<b.id?-1:1)));
+  // order each round so a game sits beside the parents that feed it (keeps connectors clean)
+  const ordered={}; let prev=null;
+  BK_ROUNDS.forEach(([r,size])=>{
+    let list=byRound[r];
+    if(prev){
+      const used=new Set(),seq=[];
+      prev.forEach(p=>{const w=koWinner(p);if(w==null)return;const g=list.find(x=>!used.has(x.id)&&(x.home===w||x.away===w));if(g&&!used.has(g.id)){used.add(g.id);if(!seq.includes(g))seq.push(g);}});
+      list.forEach(g=>{if(!used.has(g.id)){seq.push(g);used.add(g.id);}});
+      list=seq;
+    }
+    const slots=[]; for(let i=0;i<size;i++)slots.push(list[i]||null);
+    ordered[r]=slots; prev=slots.filter(Boolean);
+  });
+  // build links parent->child by winner identity
+  bracketLinks=[];
+  for(let ri=1;ri<BK_ROUNDS.length;ri++){
+    const r=BK_ROUNDS[ri][0],pr=BK_ROUNDS[ri-1][0];
+    ordered[r].forEach(g=>{if(!g)return;[g.home,g.away].forEach(team=>{
+      const par=ordered[pr].find(p=>p&&koWinner(p)===team); if(par)bracketLinks.push([par.id,g.id]);});});
+  }
+  const champ=GAMES.find(g=>g.knockout&&g.round==='final'&&g.fin);
+  const third=GAMES.find(g=>g.knockout&&g.round==='third');
+  let champHTML='';
+  if(champ){const w=koWinner(champ);champHTML='<div class="bk-champ"><svg width="26" height="26" viewBox="0 0 576 512" fill="currentColor"><path d="M552 64H448V24c0-13.3-10.7-24-24-24H152c-13.3 0-24 10.7-24 24v40H24C10.7 64 0 74.7 0 88v56c0 35.7 22.5 72.4 61.9 100.7 31.5 22.7 69.8 37.1 110 41.7C203.3 338.5 240 360 240 360v72h-48c-35.3 0-64 20.7-64 56v12c0 6.6 5.4 12 12 12h296c6.6 0 12-5.4 12-12v-12c0-35.3-28.7-56-64-56h-48v-72s36.7-21.5 68.1-73.6c40.3-4.6 78.6-19 110-41.7C553.5 216.4 576 179.7 576 144V88c0-13.3-10.7-24-24-24z"/></svg><div><div class="bc-l">World Champions</div><div class="bc-n">'+TEAM[w].flag+' '+TEAM[w].name+'</div></div></div>';}
+  const anyKO=BK_ROUNDS.some(([r])=>byRound[r].length);
+  const intro=anyKO?'':'<div class="bk-intro">The bracket fills in as the knockout stage plays out. Round of 32 begins 28 June — matchups and results will appear here automatically.</div>';
+  const cols=BK_ROUNDS.map(([r,size])=>'<div class="bk-col"><div class="bk-colh">'+RD_SHORT[r]+'</div>'+ordered[r].map(g=>bkCell(g,r)).join('')+'</div>').join('');
+  let thirdHTML='';
+  if(third)thirdHTML='<div class="bk-third"><span class="lbl">3rd place</span>'+(third.fin?TEAM[koWinner(third)].flag+' '+TEAM[koWinner(third)].name+' won':TEAM[third.home].name+' v '+TEAM[third.away].name)+'</div>';
+  main.innerHTML=champHTML+intro+'<div class="bk-scroll"><div class="bk-canvas"><svg class="bk-svg"></svg><div class="bk-cols">'+cols+'</div></div></div>'+thirdHTML;
+  document.querySelectorAll('.bk-cell[data-m]').forEach(el=>el.addEventListener('click',()=>openMatch(el.dataset.m)));
+  requestAnimationFrame(()=>requestAnimationFrame(drawBracketLines));
+}
+function drawBracketLines(){
+  const canvas=document.querySelector('.bk-canvas'),svg=canvas&&canvas.querySelector('.bk-svg'); if(!canvas||!svg)return;
+  const W=canvas.scrollWidth,H=canvas.scrollHeight;
+  svg.setAttribute('width',W);svg.setAttribute('height',H);svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  const cr=canvas.getBoundingClientRect();
+  let d='';
+  bracketLinks.forEach(([pid,cid])=>{
+    const pe=document.getElementById('bkc-'+pid)||document.querySelector('.bk-cell[data-m="'+pid+'"]');
+    const ce=document.getElementById('bkc-'+cid)||document.querySelector('.bk-cell[data-m="'+cid+'"]');
+    if(!pe||!ce)return;
+    const pr=pe.getBoundingClientRect(),crr=ce.getBoundingClientRect();
+    const x1=pr.right-cr.left,y1=pr.top-cr.top+pr.height/2,x2=crr.left-cr.left,y2=crr.top-cr.top+crr.height/2,mx=(x1+x2)/2;
+    d+='<path d="M'+x1+' '+y1+' H'+mx+' V'+y2+' H'+x2+'" fill="none" stroke="var(--line)" stroke-width="1.5"/>';
+  });
+  svg.innerHTML=d;
+}
+
 /* ============================== SHEET ============================== */
 let stack=[];
 function pushSheet(s){stack.push(s);renderSheet();}
@@ -827,8 +932,9 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')stack.length>1?backS
 
 /* ============================== NAV + INIT ============================== */
 let curView='matches';
-function setView(v){curView=v;document.querySelectorAll('.navbtn').forEach(b=>b.setAttribute('aria-current',b.dataset.view===v));window.scrollTo(0,0);v==='matches'?renderMatches():renderStandings();}
+function setView(v){curView=v;document.querySelectorAll('.navbtn').forEach(b=>b.setAttribute('aria-current',b.dataset.view===v));window.scrollTo(0,0);v==='matches'?renderMatches():v==='bracket'?renderBracket():renderStandings();}
 document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+window.addEventListener('resize',()=>{if(curView==='bracket')drawBracketLines();});
 
 /* ============================== LIVE DATA LAYER ============================== */
 let lastUpdated=null, feedOk=null;
@@ -865,7 +971,7 @@ function updateHeaderStatus(){
 /* re-render current view, preserving scroll; refresh an open *live* match sheet only */
 function rerender(){
   const y=window.scrollY;
-  curView==='matches'?renderMatches():renderStandings();
+  curView==='matches'?renderMatches():curView==='bracket'?renderBracket():renderStandings();
   window.scrollTo(0,y);
   const top=stack[stack.length-1];
   if(top&&top.type==='match'&&GById[top.key]&&GById[top.key].live)renderSheet();
