@@ -508,7 +508,7 @@ const RD_NAME={r32:'Round of 32',r16:'Round of 16',qf:'Quarter-final',sf:'Semi-f
 const RD_SHORT={r32:'R32',r16:'R16',qf:'QF',sf:'SF',third:'3rd place',final:'Final'};
 const RD_NEXT={r32:'the Round of 16',r16:'the quarter-finals',qf:'the semi-finals',sf:'the final',third:'',final:''};
 const KO_WINDOWS=[['r32','2026-06-28','2026-07-03'],['r16','2026-07-04','2026-07-07'],['qf','2026-07-09','2026-07-11'],['sf','2026-07-14','2026-07-15'],['third','2026-07-18','2026-07-18'],['final','2026-07-19','2026-07-19']];
-function roundForDate(d){const t=+new Date(d);for(const[r,s,e]of KO_WINDOWS){if(t>=Date.parse(s+'T00:00:00Z')&&t<=Date.parse(e+'T23:59:59Z'))return r;}return null;}
+function roundForDate(d){const dt=new Date(d);if(isNaN(dt))return null;const ymd=localYMD(dt);for(const[r,s,e]of KO_WINDOWS){if(ymd>=s&&ymd<=e)return r;}return null;}
 function matchCard(g){
   const t=TEAM,live=g.live,fin=g.fin,ko=g.knockout,pens=g.penH!=null,showScore=fin||live;
   const meta=live?'<span class="lvm"><span class="livedot"></span><span data-clk="'+g.id+'">'+liveMinuteStr(g)+'</span></span>'
@@ -906,20 +906,22 @@ function applyScoreboard(data){
     const comp=ev.competitions&&ev.competitions[0]; if(!comp)return;
     const cs=comp.competitors||[]; if(cs.length<2)return;
     const a=resolveAb(cs[0]),b=resolveAb(cs[1]);
-    const rnd=roundForDate(ev.date||comp.date);
-    let g;
-    if(rnd){
-      // knockout fixture — identify by ESPN event id (two teams can meet again in a later
-      // round, so the team pair alone can't tell a knockout game from their group meeting)
-      g=KO_BY_ESPN[ev.id];
-      if(!g){
-        if(!META[a]||!META[b])return;
-        g={id:'KO-'+ev.id,knockout:true,round:rnd,group:null,md:null,home:a,away:b,hs:0,as:0,fin:0,live:false,wp:null,clockInfo:null,ko:ev.date?new Date(ev.date):new Date()};
+    const evDate=ev.date?new Date(ev.date):(comp.date?new Date(comp.date):null);
+    let g=KO_BY_ESPN[ev.id];
+    if(!g){
+      const seed=PAIR_INDEX[PAIR(a,b)];
+      // a seeded group game is matched by team pair as long as the feed date sits near its
+      // scheduled kick-off — this keeps a late group game that rolls past midnight UTC
+      // (e.g. the final Group J round) from being mistaken for a knockout fixture, while a
+      // genuine knockout rematch of the same pair (weeks later) still ingests as knockout
+      if(seed&&(!evDate||Math.abs(evDate-seed.ko)<5*864e5)){
+        g=seed;
+      } else {
+        const rnd=roundForDate(evDate);
+        if(!rnd||!META[a]||!META[b])return;
+        g={id:'KO-'+ev.id,knockout:true,round:rnd,group:null,md:null,home:a,away:b,hs:0,as:0,fin:0,live:false,wp:null,clockInfo:null,ko:evDate||new Date()};
         GAMES.push(g); GById[g.id]=g; KO_BY_ESPN[ev.id]=g;
       }
-    } else {
-      // group fixture — one of the 72 seeded games, matched by unordered team pair
-      g=PAIR_INDEX[PAIR(a,b)]; if(!g)return;
     }
     const stt=(comp.status&&comp.status.type)||{},state=stt.state;
     const sc={}; cs.forEach(c=>sc[resolveAb(c)]=parseInt(c.score,10)||0);
