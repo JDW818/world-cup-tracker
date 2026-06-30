@@ -328,6 +328,13 @@
   .bk-pens{font-size:8px;color:var(--gold);font-family:'Oswald';letter-spacing:.3px;text-transform:uppercase;text-align:center;padding-top:2px;white-space:nowrap}
   .bk-third{margin:2px 18px 0;padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);display:flex;align-items:center;gap:10px;font-size:12px}
   .bk-third .lbl{font-family:'Oswald';font-weight:500;text-transform:uppercase;letter-spacing:.5px;font-size:9.5px;color:var(--muted);flex:0 0 auto}
+  /* group fixtures/table toggle + team squad */
+  .gsegwrap{display:flex;justify-content:center;margin:14px 0 2px}
+  .gseg{margin:0;width:100%;max-width:300px}
+  .squad{display:flex;flex-direction:column;gap:13px}
+  .sqpos{font-family:'Oswald';font-weight:500;text-transform:uppercase;letter-spacing:.6px;font-size:10.5px;color:var(--muted);margin-bottom:8px}
+  .sqpos span{color:var(--faint);margin-left:5px}
+  .sqlist{display:flex;flex-wrap:wrap;gap:7px}
   .ko-panel{background:var(--panel2);border:1px solid var(--line);border-radius:14px;overflow:hidden}
   .ko-panel .ko-body{padding:15px 16px}
   .ko-head{font-family:'Oswald';font-weight:700;font-size:17px;letter-spacing:.2px;line-height:1.3}
@@ -362,8 +369,6 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Matches</button>
     <button class="navbtn" data-view="bracket">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 4v5a3 3 0 0 0 3 3h4M5 20v-5a3 3 0 0 1 3-3M12 12h3"/><rect x="15" y="9" width="5" height="6" rx="1.2"/></svg>Bracket</button>
-    <button class="navbtn" data-view="standings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Standings</button>
   </div></nav>
 </div>
 <div class="scrim" id="scrim"></div>
@@ -537,6 +542,7 @@ const badge=s=>'<span class="badge '+STLABEL[s][1]+'">'+STLABEL[s][0]+'</span>';
 const allDays=[...new Set(GAMES.map(g=>localYMD(g.ko)))].sort();
 const todayYMD=localYMD(new Date());
 let selPhase='group';
+let groupTab='fixtures';
 let landed=false;
 let selDay=allDays.includes(todayYMD)?todayYMD:(allDays.find(d=>d>=todayYMD)||allDays[allDays.length-1]);
 
@@ -587,8 +593,17 @@ function renderMatches(){
     if(firstLoad){const e=document.getElementById('todaySlate');if(e)requestAnimationFrame(()=>e.scrollIntoView({block:'start'}));}
     return;
   }
-  rw.style.display='block';
+  rw.style.display=(groupTab==='table')?'none':'block';
   document.getElementById('koBar').style.display='none';
+  const lg=document.getElementById('legendWrap');
+  const toggle='<div class="gsegwrap"><div class="seg gseg"><button class="segb" data-gtab="fixtures" aria-pressed="'+(groupTab!=='table')+'">Fixtures</button><button class="segb" data-gtab="table" aria-pressed="'+(groupTab==='table')+'">Group tables</button></div></div>';
+  if(groupTab==='table'){
+    lg.style.display='flex'; lg.innerHTML=LEGEND_HTML;
+    main.innerHTML='<div class="daygroup">'+toggle+'</div>'+groupTablesHTML();
+    wirePhases(); wireGroupTables(); wireGTabs();
+    return;
+  }
+  lg.style.display='none';
   document.getElementById('rail').innerHTML=allDays.map(d=>{
     const dt=new Date(d+'T12:00:00'), gd=GAMES.filter(g=>localYMD(g.ko)===d);
     const allFin=gd.every(g=>g.fin), cls=['dpill'];
@@ -601,8 +616,8 @@ function renderMatches(){
   const dt=new Date(selDay+'T12:00:00'), mds=[...new Set(list.map(g=>g.md))];
   const mdTag=mds.length===1?'<span class="md">Matchday '+mds[0]+'</span>':'';
   const isToday=selDay===todayYMD;
-  main.innerHTML='<div class="daygroup"><div class="dayhdr"><span class="dt">'+(isToday?'Today · ':'')+dt.toLocaleDateString([],{weekday:'long',month:'short',day:'numeric'})+'</span>'+mdTag+'<span class="ct">'+list.length+' match'+(list.length>1?'es':'')+'</span></div>'+list.map(matchCard).join('')+'</div>';
-  wirePhases(); bindMatches();
+  main.innerHTML='<div class="daygroup">'+toggle+'<div class="dayhdr"><span class="dt">'+(isToday?'Today · ':'')+dt.toLocaleDateString([],{weekday:'long',month:'short',day:'numeric'})+'</span>'+mdTag+'<span class="ct">'+list.length+' match'+(list.length>1?'es':'')+'</span></div>'+list.map(matchCard).join('')+'</div>';
+  wirePhases(); bindMatches(); wireGTabs();
   const sel=document.querySelector('.dpill.sel'); if(sel)sel.scrollIntoView({inline:'center',block:'nearest'});
 }
 function koContextBar(rk){
@@ -652,16 +667,11 @@ function bindMatches(){
   });
 }
 
-/* ============================== STANDINGS VIEW ============================== */
-function renderStandings(){
-  const main=document.getElementById('main');
-  document.getElementById('phases').style.display='none';
-  document.getElementById('railWrap').style.display='none';
-  document.getElementById('koBar').style.display='none';
-  const lg=document.getElementById('legendWrap'); lg.style.display='flex';
-  lg.innerHTML='<span><i class="ldot l-through"></i>Advancing</span><span><i class="ldot l-alive"></i>Top-2 fight</span><span><i class="ldot l-third"></i>3rd-place race</span><span><i class="ldot l-out"></i>Eliminated</span>';
+/* ============================== GROUP TABLES (folded into the Group Stage tab) ============================== */
+const LEGEND_HTML='<span><i class="ldot l-through"></i>Advancing</span><span><i class="ldot l-alive"></i>Top-2 fight</span><span><i class="ldot l-third"></i>3rd-place race</span><span><i class="ldot l-out"></i>Eliminated</span>';
+function groupTablesHTML(){
   const groups=[...new Set(Object.values(TEAM).map(t=>t.group))].sort();
-  main.innerHTML=groups.map(g=>{
+  return groups.map(g=>{
     const cls=classifyGroup(g,liveOverrides(g));
     const rows=teamsOf(g).map(ab=>TEAM[ab]).sort((a,b)=>a.rank-b.rank).map(t=>{
       const gd=(t.gd>0?'+':'')+t.gd;
@@ -683,10 +693,13 @@ function renderStandings(){
       +'<table><thead><tr><th class="pos"></th><th class="l">Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead><tbody>'+rows+'</tbody></table>'
       +'<div class="gfix">'+fixtures+'</div></div>';
   }).join('');
+}
+function wireGroupTables(){
   document.querySelectorAll('[data-gh]').forEach(h=>h.addEventListener('click',()=>h.parentElement.classList.toggle('open')));
   document.querySelectorAll('tr[data-team]').forEach(r=>r.addEventListener('click',()=>openTeam(r.dataset.team)));
   document.querySelectorAll('.gfix [data-m]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openMatch(el.dataset.m);}));
 }
+function wireGTabs(){document.querySelectorAll('[data-gtab]').forEach(b=>b.addEventListener('click',()=>{groupTab=b.dataset.gtab;renderMatches();}));}
 
 const PHASES=[['group','Group Stage'],['r32','Round of 32'],['r16','Round of 16'],['qf','Quarter-finals'],['sf','Semi-finals'],['final','Final']];
 
@@ -786,6 +799,7 @@ function renderSheet(){
   document.getElementById('sheetBody').innerHTML=top.type==='match'?matchSheet(top.key):teamSheet(top.key);
   wireSheet();
   if(top.type==='match'&&typeof maybeFetchLineups==='function')maybeFetchLineups(top.key);
+  if(top.type==='team'&&typeof maybeFetchSquad==='function')maybeFetchSquad(top.key);
   requestAnimationFrame(()=>setTimeout(()=>document.querySelectorAll('.pseg,.sh,.sa').forEach(s=>{if(s.dataset.w)s.style.width=s.dataset.w+'%';}),60));
 }
 const verbFor=s=>s==='through'?'<b>qualify</b>':s==='out'?'are <b class="r">eliminated</b>':s==='third'?'drop into the <b class="bl">3rd-place race</b>':'keep the <b>top-two fight</b> alive';
@@ -918,6 +932,18 @@ function teamScenario(ab){
   if(sL==='out')sub+=' Defeat ends their run entirely.';else if(sL==='third')sub+=' Defeat would drop them into the third-place race.';
   return{tone:'alive',head,sub};
 }
+function teamSquadHTML(ab){
+  const seen={};
+  GAMES.forEach(g=>{const gs=GS[g.id]; if(gs&&gs.xi&&gs.xi[ab])gs.xi[ab].forEach(s=>{const p=parsePlayer(s); if(p.name&&!seen[p.name])seen[p.name]=p.pos;});});
+  const names=Object.keys(seen);
+  if(!names.length)return '<div class="empty">Squad appears once a match line-up has been confirmed.</div>';
+  const order=[['goalkeeper','Goalkeepers'],['defender','Defenders'],['midfielder','Midfielders'],['forward','Forwards']];
+  return '<div class="squad">'+order.map(([k,lab])=>{
+    const list=names.filter(n=>seen[n]===k).sort();
+    if(!list.length)return '';
+    return '<div class="sqgrp"><div class="sqpos">'+lab+'<span>'+list.length+'</span></div><div class="sqlist">'+list.map(n=>'<span class="subchip">'+n+'</span>').join('')+'</div></div>';
+  }).join('')+'</div><div class="note" style="margin-top:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg><span>Compiled from confirmed match-day line-ups.</span></div>';
+}
 function teamSheet(ab){
   const t=TEAM[ab],g=t.group,sc=teamScenario(ab),back=stack.length>1?'<button class="backlink" data-back>‹ Back</button>':'';
   const fixtures=GAMES.filter(m=>m.group===g&&(m.home===ab||m.away===ab)).sort((a,b)=>a.ko-b.ko).map(m=>{
@@ -931,6 +957,7 @@ function teamSheet(ab){
   return back+'<div class="dt-head" style="padding-bottom:10px"><div class="dt-flag" style="font-size:54px">'+t.flag+'</div><div class="dt-ab" style="font-size:22px;margin-top:8px">'+t.name+'</div><div class="dt-meta" style="margin:8px 0 0"><span class="grouptag">Group '+g+'</span>'+ORD(t.rank)+' · '+t.pts+' pts</div></div>'
     +'<div class="sec-t">Road to the last 32</div><div class="qpanel '+sc.tone+'"><div class="qh"><div class="qhead">'+sc.head+'</div>'+badge(sc.tone)+'</div><div class="qsub">'+sc.sub+'</div></div>'
     +'<div class="record"><div class="rcell"><div class="rv">'+t.gp+'</div><div class="rl">Played</div></div><div class="rcell"><div class="rv">'+t.w+'</div><div class="rl">Won</div></div><div class="rcell"><div class="rv">'+t.d+'</div><div class="rl">Drawn</div></div><div class="rcell"><div class="rv">'+t.l+'</div><div class="rl">Lost</div></div><div class="rcell"><div class="rv">'+gd+'</div><div class="rl">GD</div></div><div class="rcell ptscell"><div class="rv">'+t.pts+'</div><div class="rl">Pts</div></div></div>'
+    +'<div class="sec-t">Squad</div>'+teamSquadHTML(ab)
     +'<div class="sec-t">Fixtures</div>'+fixtures;
 }
 function wireSheet(){
@@ -952,7 +979,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')stack.length>1?backS
 
 /* ============================== NAV + INIT ============================== */
 let curView='matches';
-function setView(v){curView=v;document.querySelectorAll('.navbtn').forEach(b=>b.setAttribute('aria-current',b.dataset.view===v));window.scrollTo(0,0);v==='matches'?renderMatches():v==='bracket'?renderBracket():renderStandings();}
+function setView(v){curView=v;document.querySelectorAll('.navbtn').forEach(b=>b.setAttribute('aria-current',b.dataset.view===v));window.scrollTo(0,0);v==='bracket'?renderBracket():renderMatches();}
 document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
 window.addEventListener('resize',()=>{if(curView==='bracket')drawBracketLines();});
 
@@ -991,7 +1018,7 @@ function updateHeaderStatus(){
 /* re-render current view, preserving scroll; refresh an open *live* match sheet only */
 function rerender(){
   const y=window.scrollY;
-  curView==='matches'?renderMatches():curView==='bracket'?renderBracket():renderStandings();
+  curView==='bracket'?renderBracket():renderMatches();
   window.scrollTo(0,y);
   const top=stack[stack.length-1];
   if(top&&top.type==='match'&&GById[top.key]&&GById[top.key].live)renderSheet();
@@ -1121,14 +1148,24 @@ function parseRosters(sum,g){
     out[key]=[...pl.filter(p=>p.starter).map(fmt),...pl.filter(p=>!p.starter).map(fmt)];});
   return (out[g.home]&&out[g.away]&&out[g.home].length>=11)?out:null;
 }
-async function maybeFetchLineups(id){
-  const g=GById[id]; if(!g||!g.espnId||lineupTried.has(id))return;
-  if(GS[id]&&GS[id].xi)return; if(!(g.fin||g.live))return;
+async function fetchMatchLineups(id){
+  const g=GById[id]; if(!g||!g.espnId||lineupTried.has(id))return false;
+  if(GS[id]&&GS[id].xi)return false; if(!(g.fin||g.live))return false;
   lineupTried.add(id);
   try{const sum=await fetchJSON(SUMMARY(g.espnId)),xi=parseRosters(sum,g);
-    if(xi){GS[id]={st:(GS[id]&&GS[id].st)||null,ev:(GS[id]&&GS[id].ev)||[],xi};
-      const top=stack[stack.length-1]; if(top&&top.type==='match'&&top.key===id)renderSheet();}
+    if(xi){GS[id]={st:(GS[id]&&GS[id].st)||null,ev:(GS[id]&&GS[id].ev)||[],xi};return true;}
   }catch(e){console.warn('[WC] lineup fetch failed',id,e);}
+  return false;
+}
+async function maybeFetchLineups(id){
+  if(await fetchMatchLineups(id)){const top=stack[stack.length-1]; if(top&&top.type==='match'&&top.key===id)renderSheet();}
+}
+/* pull every available line-up for a team so its squad page can be populated any time */
+async function maybeFetchSquad(ab){
+  const ms=GAMES.filter(g=>(g.home===ab||g.away===ab)&&(g.fin||g.live)&&g.espnId&&!(GS[g.id]&&GS[g.id].xi)&&!lineupTried.has(g.id));
+  if(!ms.length)return; let any=false;
+  for(const g of ms){if(await fetchMatchLineups(g.id))any=true;}
+  if(any){const top=stack[stack.length-1]; if(top&&top.type==='team'&&top.key===ab)renderSheet();}
 }
 
 /* boot */
